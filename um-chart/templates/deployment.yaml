@@ -1,0 +1,161 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "um-microservice.fullname" . }}
+  labels:
+    {{- include "um-microservice.labels" . | nindent 4 }}
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  strategy:
+    rollingUpdate:
+      maxSurge: {{ .Values.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.rollingUpdate.maxUnavailable }}
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "um-microservice.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "um-microservice.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.ports.containerPort }}
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.readinessProbe.path }}
+              port: {{ .Values.ports.containerPort }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+          {{- if .Values.livenessProbe.enable -}}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.livenessProbe.path }}
+              port: {{ .Values.ports.containerPort }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          {{- end }}
+          resources:
+            limits:
+              cpu: {{ .Values.resourcesLimits.cpu }}
+              memory: {{ .Values.resourcesLimits.memory }}
+            requests:
+              cpu: {{ .Values.requestsResources.cpu }}
+              memory: {{ .Values.requestsResources.memory }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+          env:
+          - name: MYSQL_URL
+            value: {{ .Values.env.mysqlUrl }}
+          - name: MYSQL_USERNAME
+            value: {{ .Values.env.mysqlUsername }}
+          - name: MYSQL_CHECKSUM
+            value: {{ .Values.env.mysqlChecksum }}
+          - name: preferIPv6Addresses
+            value: {{ .Values.env.ipv6 | quote }}
+          - name: auditKafkaServiceEnable
+            value: {{ .Values.env.auditKafkaEnable | quote }}
+          - name: UM_CONTEXT
+            value: {{ .Values.env.serviceContext | quote }}
+          - name: SERVICE_JAVAMELODY_USERPASS
+            value: {{ .Values.env.serviceJavamelodyUserpass | quote }}
+          - name: REDIS_MASTER
+            value: {{ .Values.env.redisMaster | quote }}
+          - name: REDIS_SENITAL_LIST
+            value: {{ .Values.env.redisSenitalList | quote }}
+          - name: REDIS_MASTER_AUTH
+            value: {{ .Values.env.redisMasterAuth | quote }}
+          - name: REDIS_SENITAL_ENABLE
+            value: {{ .Values.env.redisSenitalEnable | quote }}
+          - name: REDIS_SERVER_URL
+            value: {{ .Values.env.redisServerUrl | quote }}
+          - name: REDIS_HOSTNAME
+            value: {{ .Values.env.redisHostname | quote }}
+          - name: REDIS_PORT
+            value: {{ .Values.env.redisPort | quote }}
+          - name: REDIS_IDLE_MIN
+            value: {{ .Values.env.redisIdleMin | quote }}
+          - name: REDIS_IDLE_MAX
+            value: {{ .Values.env.redisIdleMax | quote }}
+          - name: REDIS_TOTAL_MAX
+            value: {{ .Values.env.redisTotalMax | quote }}
+          - name: IDP_URL
+            value: {{ .Values.env.idpUrl | quote }}
+          - name: IS_ROLEPERMISSION_SYNC_ENABLE
+            value: {{ .Values.env.isRolePermissionSyncEnable | quote }}
+          - name: GEO_URL
+            value: {{ .Values.env.geoUrl | quote }}
+          - name: PLATFORM_URL
+            value: {{ .Values.env.platformUrl | quote }}
+          - name: NOTIFICATION_URL
+            value: {{ .Values.env.notificationUrl | quote }}
+          - name: INVENTORY_URL
+            value: {{ .Values.env.metaServiceUrl | quote }}
+          - name: MINIO_BUCKET_NAME
+            value: {{ .Values.env.minioBucketName | quote }}
+          - name: NGINX_ENABLE
+            value: {{ .Values.env.nginxEnable | quote }}          
+          - name: STORAGE_NFS_AVAILABLE
+            value: {{ .Values.env.storageNfsAvailable | quote }}
+          - name: JWT_FILTER_ENABLE
+            value: {{ .Values.env.jwtFilterEnable | quote }}
+          - name: IS_ROLEPERMISSION_SYNC_ENABLE
+            value: {{ .Values.env.isRolePermissionSyncEnable | quote }}
+          - name: COMMONS_STORAGE_TYPE
+            value: {{ .Values.env.commonsStorageType | quote }}
+          - name: COMMONS_STORAGE_ENDPOINT
+            value: {{ .Values.env.commonsStorageEndPoint | quote }}
+          - name: COMMONS_STORAGE_ACCESSKEY
+            value: {{ .Values.env.commonsStorageAccessKey | quote }}
+          - name: COMMONS_STORAGE_SECRETKEY
+            value: {{ .Values.env.commonsStorageSecretKey | quote }}
+          - name: SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVER
+            value: {{ .Values.env.springKafkaProducerBootstrap | quote }}
+          - name: SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVER
+            value: {{ .Values.env.springKafkaConsumerBootstrap | quote }}
+          - name: AUDIT_KAFKA_SERVICE_ENABLE
+            value: {{ .Values.env.auditKafkaServiceEnable | quote }}
+          - name: KAFKA_AUDITABLE_TOPIC
+            value: {{ .Values.env.kafkaAuditableTopic | quote }}
+          - name: Xmx
+            value: {{ .Values.env.Xmx | quote }}
+          - name: Xms
+            value: {{ .Values.env.Xms | quote }}
+          volumeMounts:
+          - name: {{ .Values.volumeName.sharedDir1 }}
+            mountPath: {{ .Values.volumeMounts.protectedPath }}
+      volumes:
+      - name: {{ .Values.volumeName.sharedDir1 }}
+        nfs:
+          server: {{ .Values.volumes.nfsServerUrl }}
+          path: {{ .Values.volumes.nfsServerPath }}
+
