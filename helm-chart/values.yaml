@@ -1,0 +1,186 @@
+# Default values for platform-utility.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+#  registry: 192.170.10.40
+#  repository: {{ .Values.image.registry }}/innoeye/app-service
+  repository: 192.168.4.235:5000/platform-app
+  tag: "1.0.0"
+  pullPolicy: Always
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+rollingUpdate:
+  maxSurge: 50%
+  maxUnavailable: 0%
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: /platform/actuator/prometheus
+  prometheus.io/scheme: http
+  prometheus.io/port: "9019"
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  port: 80
+  targetPort: 9019
+  type: ClusterIP
+
+ingress:
+  enabled: false
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths: []
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+virtualService:
+  enabled: false
+  context: /platform
+  hosts: "*" 
+  gateways: fs-gateway
+
+# Resource limit availble on node
+resourcesLimits:
+  cpu: 2
+  memory: 4G
+# Resoucr Requested for container
+requestsResources:
+  cpu: 2
+  memory: 4G
+
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 75
+  targetMemoryUtilizationPercentage: 75
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+#Pod_Affinity:
+#   enabled: true
+ #  app_name: app-test
+ #  type: app 
+
+#READYNESS
+
+livenessProbe:
+  enable: true
+  path: /platform/rest/ping
+  initialDelaySeconds: 300
+  periodSeconds: 20
+  failureThreshold: 3
+  timeoutSeconds: 3
+
+readinessProbe:
+  path: /platform/rest/ping
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 3
+
+ports:
+  containerPort: 9019
+
+
+## FOR VOLUME MOUNTS
+
+volumeMounts:
+  protectedPath: /protected
+  sharedPath: /data/report
+  hadoopPath: /usr/hdp/current/hadoop-client/conf
+  hbasePath: /usr/hdp/current/hbase-client/conf
+  appServerBuild: /opt/foresight/foresight-app/
+
+##FOR VOLUMES
+nfs:
+   hostpath: true
+   asServer: false
+volumeName:
+  sharedDir1: shared-vol1
+  #sharedDir2: shared-vol2
+volumes:
+  nfsServerUrl: 192.168.4.235
+  nfsServerPath: /cluster-nfs/protected
+  nfsProtectedPath: /cluster-nfs/protected
+
+
+## 
+configMap:
+  defaultMode: 0755
+## FOR ENV
+
+env:
+    mysqlUrl: "xRB9dqm8lgrtuLlLQt/IxluY2l66iO21F5mG8Z99QpIkT0UZ0zIy/Gf7AWPZJ3iGNObRsmeuy1Ob53Dnsb3+W49Yfmd/UgWfJX6Ht0znOROejUYrKOJx8wam/T/Ua4y91Khxq93JD/hWCVVDmTON6DNtyNtNC30pPVCGfN21buf3KI8KjIubte3Kbn3Dqon7ftfo2EU7LrrDlvzVe0MRdw=="
+    mysqlUsername: "Z/Otj52OSL7gB2MOJ38ncA=="
+    mysqlChecksum: "ZKRKQwgQW1sEMbTFtDmnLQ=="
+    ipv6: false
+    microBaseUrl: "6ktSAougutk8Letqp/jddMDL/MmPHkD7ZSQo7fOyQx0="
+    nodeBaseUrl: "kH0p345LQ0hyKeEn8IammGB0uWLnnQZIozDXJLFcUlA="
+    auditKafkaEnable: "false"
+    phoenixUrl: "WDpsO4G5IC+RXB07yEfIFFgxhDeEVrDjNG7P4aro+MOdj1MSYiTWxg5arqM9ZjDVqlmdvekyrw7NxfGX8aaAWt5Xhtpc+rTx7U1C0xCxXdI="
+    apacheDownloadUrl: "coehhm8U80PEC36FXljQml7RxVdHL5LaeVgclMgRbX/56dNjh7boU/iFwCFmoxih"
+    servicePort: 9019
+    serviceContext: "/platform"
+    serviceJavamelodyUserpass: "cHJvZHVjdDpwcm9kdWN0Cg=="
+    redisSenitalList: "lj4j9n7g1fjW43/64LF417Q15+yk36v8ZTwKVuS/rfQ0BUKdly/O7WHOskMf3YMg5J+LDFCi1Q6BMNyu5h2pJTe66ZmPbjFC/tD7GZR7R3k=,lj4j9n7g1fjW43/64LF415DeayaMPwEES2zdCIUVVWD9awkkyiueKcMoca5oGKd3smGYlSFqMQp7EqEBPAKo1IKajtxLb8H/SOMWwaGV9Ro=,lj4j9n7g1fjW43/64LF41zpB5FnnqbDIoBuqYf6SjQfCzYaHiQybdkdwnNus3xNNDHQiH5evYNWdmFQETu3FqB6YuZQO7v054nTFUX7Zxkw="
+    redisMaster: "tHSoqN4LH8Ae9+HrbpKIXg=="
+    redisMasterAuth: "7+izoW1FilKhEwNRfy2hww=="
+    redisSenitalEnable: "B6V+uDmE1LvqI+UAcULNtg=="
+    auditKafkaServiceEnable: "false"
+    microServiceBaseUrl: "6ktSAougutk8Letqp/jddMDL/MmPHkD7ZSQo7fOyQx0="
+    attachmentServiceBaseUrl: "uXzOYkoZheGJAi8jY/N6hMSkw/BfugJlf3I5lFOPu24DB7EXQhLGAKRwkK6s5f+E"
+    nodeServiceBaseUrl: "kH0p345LQ0hyKeEn8IammBzUAarPvHDWn0da0HuaL/s="
+    apacheDownloadBaseUrl: ""
+    Xmx: "5g"
+    Xms: "1g"
+    hbaseConfPath: "XzAV8mG1+q3J6FQWUKrlLr+ZXUh3pxjXTSC1FdlsbhlkdTe+pI8utwNhFgLUplXbqdQX9avK4wlp90qehI3Uhw=="
+    attachmentUrl: 
+    umUrl: "http://um-service/um/rest" 
+    geoUrl: "http://um-microservice/platform/rest"
+    inventoryUrl: "http://microservice/foresight/rest"
+    plateformUrl: 
+    fmUrl: "http://fm-microservice/fm/rest"
+    pmUrl: localhost:8080
+
+
+collectServer:
+  register: true
+  postStartScript: "/protected/ops-script/postStart.sh"
+  preStopEnable: true
+  preStopScript: "/protected/ops-script/Pre-Stop.sh"
